@@ -1,5 +1,8 @@
 import pandas as pd
-import datetime as dt
+import psycopg2
+from sqlalchemy import create_engine
+import time
+import os
 
 def extract(file_path:str) -> pd.DataFrame:
     #Extarcting raw data from our flatfile
@@ -20,10 +23,24 @@ def transform(df_raw:pd.DataFrame)-> pd.DataFrame:
 
     return df_raw
 
-print(transform(extract("data/sales.csv")))
+#print(transform(extract("data/sales.csv")))
 
-def load():
-    pass
+def load(df_transfromed:pd.DataFrame):
+    #Warming up Postgres using time.sleep()
+    time.sleep(6)
+    #Setting up database data
+    DB_HOST = os.environ.get('DB_HOST', 'postgres')
+    DB_NAME = os.environ.get('DB_NAME', 'salesdb')
+    DB_USER = os.environ.get('DB_USER', 'admin')
+    DB_PASS = os.environ.get('DB_PASS', 'password')
+    #create an engine
+    engine = create_engine(f'postgres://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}')
+
+    df_transfromed.to_sql("sales",engine,if_exists='replace',index=False)
+    
+    return df_transfromed
+
+print(load(transform(extract("data/sales.csv"))))
 
 
 def etl_pipeline():
