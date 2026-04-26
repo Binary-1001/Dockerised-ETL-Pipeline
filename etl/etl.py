@@ -1,15 +1,14 @@
 import pandas as pd
-import psycopg2
 from sqlalchemy import create_engine
 import time
-import os
+
 
 def extract(file_path:str) -> pd.DataFrame:
     #Extarcting raw data from our flatfile
-    print(f"\nExtracting data from {file_path}...\n")
+    print(f"Extracting data from a trusted source system: {file_path}")
     return pd.read_csv(file_path)
 
-#print(extract("data/sales.csv").head())
+
 
 def transform(df_raw:pd.DataFrame)-> pd.DataFrame:
     #calculate the total using quantity * price
@@ -23,28 +22,47 @@ def transform(df_raw:pd.DataFrame)-> pd.DataFrame:
 
     return df_raw
 
-#print(transform(extract("data/sales.csv")))
+def my_engine():
+    engine = create_engine("sqlite:///pipeline_db.db")
+    return engine
 
-def load(df_transfromed:pd.DataFrame):
-    #Warming up Postgres using time.sleep()
-    time.sleep(6)
-    #Setting up database data
-    DB_HOST = os.environ.get('DB_HOST', 'postgres')
-    DB_NAME = os.environ.get('DB_NAME', 'salesdb')
-    DB_USER = os.environ.get('DB_USER', 'admin')
-    DB_PASS = os.environ.get('DB_PASS', 'password')
+def load(file_db,df_transfromed:pd.DataFrame):
     #create an engine
-    engine = create_engine(f'postgres://{DB_USER}:{DB_PASS}@{DB_HOST}/{DB_NAME}')
-
-    df_transfromed.to_sql("sales",engine,if_exists='replace',index=False)
+    engine = my_engine()
+    #load this cleaned to the database
+    df_transfromed.to_sql(file_db, engine, if_exists='replace', index=False)
     
     return df_transfromed
 
-print(load(transform(extract("data/sales.csv"))))
-
 
 def etl_pipeline():
-    pass
+    #Extraction stage
+    print("ETL pipeline in progress.....\n")
+    time.sleep(2)
+    df_raw = extract("data/sales.csv")
+    print(f"\nExtraction of raw data is done here is a preview : \n{df_raw.head()}\n")
+    
 
+    #Transfromation stage
+    print("\nTransforming raw messy data\n")
+    time.sleep(2)
+    df_transform = transform(df_raw)
+    print(f"\nTransformation of raw messy data is done here is a preview : \n{df_transform.head()}\n")
+    
+
+    #Load stage
+    print("\nLoading cleaned data into a database\n")
+    time.sleep(2)
+    quariable_data = load("sales",df_transform)
+    print(f"\nLoading cleaned data into a database is complete here is a preview : \n{quariable_data.head()}\n")
+    print("\nETL pipeline complete happy querying :) .....\n")
+
+    
 if __name__ == "__main__":
-    pass
+    etl_pipeline()
+    print("\n")
+    result = pd.read_sql("SELECT * FROM sales",my_engine())
+    print("\nData in database:")
+    print(result)
+    print(f"\nTotal revenue: R{result['total_amount'].sum():,.2f}")
+    print(f"Top region: {result.groupby('region')['total_amount'].sum().idxmax()}")
