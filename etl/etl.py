@@ -23,7 +23,7 @@ def transform(df_raw:pd.DataFrame)-> pd.DataFrame:
     return df_raw
 
 def my_engine():
-    engine = create_engine("sqlite:///pipeline_db.db")
+    engine = create_engine("sqlite:////data/pipeline_db.db")
     return engine
 
 def load(file_db,df_transfromed:pd.DataFrame):
@@ -39,7 +39,7 @@ def etl_pipeline():
     #Extraction stage
     print("ETL pipeline in progress.....\n")
     time.sleep(2)
-    df_raw = extract("data/sales.csv")
+    df_raw = extract("/data/sales.csv")
     print(f"\nExtraction of raw data is done here is a preview : \n{df_raw.head()}\n")
     
 
